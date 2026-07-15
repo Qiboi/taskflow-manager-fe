@@ -1,10 +1,15 @@
-export type User = {
+export interface User {
     id: string;
+    username: string;
     name: string;
-    email: string;
-};
+}
 
-export type AuthSession = {
+export interface LoginCredentials {
+    username: string;
+    password: string;
+}
+
+export interface AuthSession {
     token: string;
     user: User;
-};
+}
