@@ -1,31 +1,126 @@
-import { useFilterStore } from '../store/filterStore';
-import { useLogout } from '../hooks/useAuth';
-import { useFilteredTasks, useTasksQuery } from '../hooks/useTasks';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLogout } from '../hooks/useAuth';
+import { useToast } from '../components/ui/ToastProvider';
+import { useFilterStore } from '../store/filterStore';
+import { useSelectionStore } from '../store/selectionStore';
+import { useBulkDeleteTasks, useBulkUpdateTasks, useCreateTask, useDeleteTask, useFilteredTasks, useTasksQuery, useUpdateTask } from '../hooks/useTasks';
+import type { Task } from '../types/task';
+import { TaskForm, type TaskFormValues } from '../components/tasks/TaskForm';
+import { Header } from '../components/layout/Header';
+import { BulkActionsBar } from '../components/tasks/BulkActionsBar';
+import { TaskList } from '../components/tasks/TaskList';
 
 export function DashboardPage() {
     const navigate = useNavigate();
     const logout = useLogout();
+    const { showToast } = useToast();
+
     const { status, keyword, setStatus, setKeyword } = useFilterStore();
+    const { selectedIds, clear: clearSelection } = useSelectionStore();
+
     const { data: tasks, isLoading, isError } = useTasksQuery();
     const filtered = useFilteredTasks(tasks, status, keyword);
+
+    const createTaskMutation = useCreateTask();
+    const updateTaskMutation = useUpdateTask();
+    const deleteTaskMutation = useDeleteTask();
+    const bulkUpdateMutation = useBulkUpdateTasks();
+    const bulkDeleteMutation = useBulkDeleteTasks();
+
+    const [formOpen, setFormOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
+    const openCreateForm = () => {
+        setEditingTask(null);
+        setFormOpen(true);
+    };
+
+    const openEditForm = (task: Task) => {
+        setEditingTask(task);
+        setFormOpen(true);
+    };
+
+    const closeForm = () => {
+        setFormOpen(false);
+        setEditingTask(null);
+    };
+
+    const handleFormSubmit = (values: TaskFormValues) => {
+        if (editingTask) {
+            updateTaskMutation.mutate(
+                { id: editingTask.id, title: values.title, description: values.description },
+                {
+                    onSuccess: () => {
+                        showToast('Tugas berhasil diperbarui', 'success');
+                        closeForm();
+                    },
+                    onError: () => showToast('Gagal memperbarui tugas.', 'error'),
+                }
+            );
+        } else {
+            createTaskMutation.mutate(
+                { title: values.title, description: values.description },
+                {
+                    onSuccess: () => {
+                        showToast('Tugas berhasil ditambahkan', 'success');
+                        closeForm();
+                    },
+                    onError: () => showToast('Gagal menambahkan tugas.', 'error'),
+                }
+            );
+        }
+    };
+
+    const handleToggleComplete = (task: Task) => {
+        updateTaskMutation.mutate(
+            { id: task.id, completed: !task.completed },
+            { onError: () => showToast('Gagal memperbarui status tugas.', 'error') }
+        );
+    };
+
+    const handleDelete = (task: Task) => {
+        if (!window.confirm(`Hapus tugas "${task.title}"?`)) return;
+        deleteTaskMutation.mutate(task.id, {
+            onSuccess: () => showToast('Tugas dihapus', 'success'),
+            onError: () => showToast('Gagal menghapus tugas.', 'error'),
+        });
+    };
+
+    const handleBulkComplete = () => {
+        bulkUpdateMutation.mutate(
+            { ids: Array.from(selectedIds), changes: { completed: true } },
+            {
+                onSuccess: () => {
+                    showToast(`${selectedIds.size} tugas ditandai selesai`, 'success');
+                    clearSelection();
+                },
+                onError: () => showToast('Gagal memperbarui tugas terpilih.', 'error'),
+            }
+        );
+    };
+
+    const handleBulkDelete = () => {
+        if (!window.confirm(`Hapus ${selectedIds.size} tugas terpilih?`)) return;
+        bulkDeleteMutation.mutate(Array.from(selectedIds), {
+            onSuccess: () => {
+                showToast(`${selectedIds.size} tugas dihapus`, 'success');
+                clearSelection();
+            },
+            onError: () => showToast('Gagal menghapus tugas terpilih.', 'error'),
+        });
+    };
+
+    const isBulkProcessing = bulkUpdateMutation.isPending || bulkDeleteMutation.isPending;
+
     return (
         <div className="min-h-screen bg-slate-50 p-6">
-            <header className="mb-6 flex items-center justify-between">
-                <h1 className="text-xl font-semibold text-slate-900">TaskFlow Manager</h1>
-                <button
-                    onClick={handleLogout}
-                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                    Keluar
-                </button>
-            </header>
+            <Header onLogout={handleLogout} onAddTask={openCreateForm} />
 
             <div className="mb-4 flex flex-wrap gap-2">
                 <input
@@ -40,7 +135,9 @@ export function DashboardPage() {
                         onClick={() => setStatus(s)}
                         className={
                             'rounded-lg px-3 py-2 text-sm ' +
-                            (status === s ? 'bg-brand-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200')
+                            (status === s
+                                ? 'bg-brand-600 text-white'
+                                : 'bg-white text-slate-600 ring-1 ring-slate-200')
                         }
                     >
                         {s === 'all' ? 'Semua' : s === 'active' ? 'Belum Selesai' : 'Selesai'}
@@ -48,43 +145,34 @@ export function DashboardPage() {
                 ))}
             </div>
 
+            <BulkActionsBar
+                selectedCount={selectedIds.size}
+                onComplete={handleBulkComplete}
+                onDelete={handleBulkDelete}
+                onClear={clearSelection}
+                isProcessing={isBulkProcessing}
+            />
+
             {isLoading && <p className="text-sm text-slate-500">Memuat tugas...</p>}
             {isError && <p className="text-sm text-red-600">Gagal memuat tugas.</p>}
 
-            <ul className="space-y-2">
-                {filtered.map((task) => (
-                    <li
-                        key={task.id}
-                        className="flex items-center justify-between rounded-lg bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200"
-                    >
-                        <div>
-                            <p className={task.completed ? 'text-slate-400 line-through' : 'text-slate-900'}>
-                                {task.title}
-                            </p>
-                            {task.description && (
-                                <p className="text-xs text-slate-400">{task.description}</p>
-                            )}
-                        </div>
-                        <span
-                            className={
-                                'rounded-full px-2 py-0.5 text-xs ' +
-                                (task.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700')
-                            }
-                        >
-                            {task.completed ? 'Selesai' : 'Berjalan'}
-                        </span>
-                    </li>
-                ))}
-            </ul>
-
-            {!isLoading && filtered.length === 0 && (
-                <p className="mt-6 text-center text-sm text-slate-400">Tidak ada tugas yang cocok.</p>
+            {!isLoading && !isError && (
+                <TaskList
+                    tasks={filtered}
+                    onToggleComplete={handleToggleComplete}
+                    onEdit={openEditForm}
+                    onDelete={handleDelete}
+                />
             )}
 
-            <p className="mt-8 text-xs text-slate-400">
-                Catatan: ini adalah dashboard sementara untuk membuktikan scaffold berjalan.
-                CRUD lengkap, multi-select, dan bulk actions akan ditambahkan di tahap berikutnya.
-            </p>
+            {formOpen && (
+                <TaskForm
+                    initialTask={editingTask}
+                    isSubmitting={createTaskMutation.isPending || updateTaskMutation.isPending}
+                    onSubmit={handleFormSubmit}
+                    onCancel={closeForm}
+                />
+            )}
         </div>
     );
 }
