@@ -20,24 +20,35 @@ function seedProjects(): Project[] {
     const now = new Date().toISOString();
     return [
         {
-            id: 'project-acme',
-            name: 'Acme Corp Website',
+            id: 'project-moc',
+            name: 'Company Website Redesign',
             color: PROJECT_COLORS[0],
-            clientName: 'Acme Corp',
+            clientName: 'MOC',
+            archived: false,
+            createdAt: now,
+            updatedAt: now,
+        },
+        {
+            id: 'project-design-system',
+            name: 'UI Component Library',
+            color: PROJECT_COLORS[4],
+            clientName: 'Internal / Frontend Team',
             archived: false,
             createdAt: now,
             updatedAt: now,
         },
         {
             id: 'project-personal',
-            name: 'Personal / Side Project',
+            name: 'Personal Portfolio',
             color: PROJECT_COLORS[3],
+            clientName: 'Personal',
             archived: false,
             createdAt: now,
             updatedAt: now,
         },
     ];
 }
+
 
 function readAllProjects(): Project[] {
     const raw = localStorage.getItem(PROJECTS_DB_KEY);
@@ -117,11 +128,12 @@ export const projectDb = {
 
 function seedTasks(): Task[] {
     const now = new Date().toISOString();
+
     return [
         {
             id: crypto.randomUUID(),
-            title: 'Setup project repository',
-            description: 'Inisialisasi repo dan konfigurasi awal',
+            title: 'Setup project repository dan routing awal',
+            description: 'Inisialisasi Next.js, struktur folder, dan konfigurasi dasar project frontend',
             completed: true,
             status: 'completed',
             dueDate: null,
@@ -133,26 +145,53 @@ function seedTasks(): Task[] {
         },
         {
             id: crypto.randomUUID(),
-            title: 'Desain skema Mock API',
-            description: 'Tentukan endpoint dan bentuk response',
+            title: 'Implementasi dashboard layout responsive',
+            description: 'Membangun layout sidebar, header, dan content area yang adaptif untuk desktop dan mobile',
             completed: false,
             status: 'in_progress',
             dueDate: null,
             priority: 'high',
-            difficulty: 'hard',
+            difficulty: 'medium',
             projectId: 'project-acme',
             createdAt: now,
             updatedAt: now,
         },
         {
             id: crypto.randomUUID(),
-            title: 'Implementasi fitur bulk actions',
+            title: 'Buat reusable component library',
+            description: 'Menyusun komponen UI seperti Button, Input, Dialog, Card, dan Table agar konsisten',
+            completed: false,
+            status: 'todo',
+            dueDate: null,
+            priority: 'high',
+            difficulty: 'hard',
+            projectId: 'project-design-system',
+            createdAt: now,
+            updatedAt: now,
+        },
+        {
+            id: crypto.randomUUID(),
+            title: 'Optimasi SEO dan metadata halaman',
+            description: 'Menambahkan title, description, Open Graph, dan heading structure untuk landing page',
             completed: false,
             status: 'todo',
             dueDate: null,
             priority: 'medium',
             difficulty: 'medium',
             projectId: 'project-personal',
+            createdAt: now,
+            updatedAt: now,
+        },
+        {
+            id: crypto.randomUUID(),
+            title: 'Integrasi form dengan mock API',
+            description: 'Menghubungkan form frontend ke mock endpoint untuk simulasi create dan update data',
+            completed: false,
+            status: 'todo',
+            dueDate: null,
+            priority: 'medium',
+            difficulty: 'medium',
+            projectId: null,
             createdAt: now,
             updatedAt: now,
         },
