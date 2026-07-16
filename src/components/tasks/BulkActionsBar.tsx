@@ -1,3 +1,6 @@
+import { Button } from '@/components/ui/button';
+import { CheckCheck, Trash2, X } from 'lucide-react';
+
 interface BulkActionsBarProps {
   selectedCount: number;
   onComplete: () => void;
@@ -16,29 +19,32 @@ export function BulkActionsBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="mb-4 flex items-center justify-between rounded-lg bg-slate-900 px-4 py-3 text-white shadow-lg">
-      <span className="text-sm font-medium">{selectedCount} tugas dipilih</span>
+    <div className="mb-4 flex flex-col gap-3 rounded-lg bg-foreground px-4 py-3 text-background shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
-        <button
-          onClick={onComplete}
-          disabled={isProcessing}
-          className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium hover:bg-emerald-600 disabled:opacity-60"
-        >
+        <span className="flex size-5 items-center justify-center rounded-full bg-background/15 text-xs font-semibold">
+          {selectedCount}
+        </span>
+        <span className="text-sm font-medium">tugas dipilih</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="secondary" onClick={onComplete} disabled={isProcessing}>
+          <CheckCheck className="size-4" />
           Tandai Selesai
-        </button>
-        <button
-          onClick={onDelete}
-          disabled={isProcessing}
-          className="rounded-md bg-red-500 px-3 py-1.5 text-xs font-medium hover:bg-red-600 disabled:opacity-60"
-        >
+        </Button>
+        <Button size="sm" variant="destructive" onClick={onDelete} disabled={isProcessing}>
+          <Trash2 className="size-4" />
           Hapus
-        </button>
-        <button
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
           onClick={onClear}
-          className="rounded-md px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
+          className="text-background hover:bg-background/10 hover:text-background"
         >
+          <X className="size-4" />
           Batal Pilih
-        </button>
+        </Button>
       </div>
     </div>
   );

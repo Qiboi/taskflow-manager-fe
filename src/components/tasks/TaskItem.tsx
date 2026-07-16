@@ -1,12 +1,16 @@
-import type { Task } from '../../types/task';
-import { TASK_STATUS_LABEL, TASK_PRIORITY_LABEL, TASK_DIFFICULTY_LABEL } from '../../types/task';
+import type { Task } from '@/types/task';
+import { TASK_STATUS_LABEL, TASK_PRIORITY_LABEL, TASK_DIFFICULTY_LABEL } from '@/types/task';
 import {
   statusColorClass,
   priorityColorClass,
   difficultyColorClass,
   isOverdue,
   formatDueDate,
-} from '../../lib/taskMeta';
+} from '@/lib/taskMeta';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 
 interface TaskItemProps {
   task: Task;
@@ -30,73 +34,77 @@ export function TaskItem({
   return (
     <li
       className={
-        'flex items-start gap-3 rounded-lg bg-white px-4 py-3 shadow-sm ring-1 transition ' +
-        (isSelected ? 'ring-brand-400 bg-brand-50/40' : 'ring-slate-200')
+        'group flex items-start gap-3 rounded-lg border px-4 py-3 shadow-sm transition-colors ' +
+        (isSelected ? 'border-primary/50 bg-primary/5' : 'border-border bg-card hover:bg-accent/40')
       }
     >
-      <input
-        type="checkbox"
+      <Checkbox
         checked={isSelected}
-        onChange={() => onToggleSelect(task.id)}
-        className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+        onCheckedChange={() => onToggleSelect(task.id)}
+        className="mt-1"
         aria-label={`Pilih tugas ${task.title}`}
       />
 
-      <div className="min-w-0 flex-1">
-        <p className={task.status === 'completed' ? 'truncate text-slate-400 line-through' : 'truncate text-slate-900'}>
-          {task.title}
-        </p>
-        {task.description && (
-          <p className="mt-0.5 truncate text-xs text-slate-400">{task.description}</p>
-        )}
-
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <button
-            onClick={() => onCycleStatus(task)}
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div>
+          <p
             className={
-              'rounded-full px-2 py-0.5 text-xs font-medium transition hover:opacity-80 ' +
-              statusColorClass(task.status)
+              task.status === 'completed'
+                ? 'truncate text-sm text-muted-foreground line-through'
+                : 'truncate text-sm font-medium text-foreground'
             }
+          >
+            {task.title}
+          </p>
+          {task.description && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{task.description}</p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge
+            onClick={() => onCycleStatus(task)}
+            className={'cursor-pointer select-none ' + statusColorClass(task.status)}
             title="Klik untuk ganti status"
           >
             {TASK_STATUS_LABEL[task.status]}
-          </button>
+          </Badge>
 
-          <span className={'rounded-full px-2 py-0.5 text-xs font-medium ' + priorityColorClass(task.priority)}>
+          <Badge className={priorityColorClass(task.priority)}>
             {TASK_PRIORITY_LABEL[task.priority]}
-          </span>
+          </Badge>
 
-          <span className={'rounded-full px-2 py-0.5 text-xs font-medium ' + difficultyColorClass(task.difficulty)}>
+          <Badge className={difficultyColorClass(task.difficulty)}>
             {TASK_DIFFICULTY_LABEL[task.difficulty]}
-          </span>
+          </Badge>
 
           {task.dueDate && (
-            <span
-              className={
-                'rounded-full px-2 py-0.5 text-xs font-medium ' +
-                (overdue ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500')
-              }
-            >
-              {overdue ? '⚠ ' : ''}
+            <Badge variant={overdue ? 'destructive' : 'secondary'} className="gap-1">
+              {overdue && <AlertTriangle className="size-3" />}
               {formatDueDate(task.dueDate)}
-            </span>
+            </Badge>
           )}
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
-        <button
+      <div className="flex shrink-0 items-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => onEdit(task)}
-          className="rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
+          aria-label={`Edit tugas ${task.title}`}
         >
-          Edit
-        </button>
-        <button
+          <Pencil className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => onDelete(task)}
-          className="rounded-md px-2 py-1 text-xs text-red-500 hover:bg-red-50"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          aria-label={`Hapus tugas ${task.title}`}
         >
-          Hapus
-        </button>
+          <Trash2 className="size-4" />
+        </Button>
       </div>
     </li>
   );

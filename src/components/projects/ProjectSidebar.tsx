@@ -1,5 +1,8 @@
-import type { Project } from '../../types/project';
-import type { Task } from '../../types/task';
+import type { Project } from '@/types/project';
+import type { Task } from '@/types/task';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Pencil, X, Plus, FolderOpen } from 'lucide-react';
 
 interface ProjectSidebarProps {
   projects: Project[];
@@ -26,47 +29,54 @@ export function ProjectSidebar({
   const totalCount = (tasks ?? []).length;
 
   return (
-    <aside className="w-64 shrink-0 border-r border-slate-200 bg-white p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+    <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-3">
+      <div className="mb-1 flex items-center justify-between px-1 py-2">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           Projects
         </h2>
-        <button
+        <Button
           onClick={onAddProject}
-          className="rounded-md px-1.5 py-0.5 text-xs font-medium text-brand-600 hover:bg-brand-50"
-          aria-label="Tambah project baru"
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1 px-2 text-xs font-medium text-sidebar-primary hover:bg-sidebar-primary/10 hover:text-sidebar-primary"
         >
-          + Baru
-        </button>
+          <Plus className="size-3.5" />
+          Baru
+        </Button>
       </div>
 
-      <nav className="space-y-1">
+      <nav className="space-y-0.5">
         <button
           onClick={() => onSelectProject(null)}
           className={
-            'flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition ' +
+            'flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors ' +
             (activeProjectId === null
-              ? 'bg-slate-900 text-white'
-              : 'text-slate-600 hover:bg-slate-100')
+              ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent')
           }
         >
-          <span>All Projects</span>
-          <span
-            className={
-              'rounded-full px-1.5 py-0.5 text-xs ' +
-              (activeProjectId === null ? 'bg-white/20' : 'bg-slate-100 text-slate-500')
-            }
+          <span className="flex items-center gap-2">
+            <FolderOpen className="size-4 opacity-70" />
+            All Projects
+          </span>
+          <Badge
+            variant="secondary"
+            className={activeProjectId === null ? 'bg-white/20 text-current hover:bg-white/20' : ''}
           >
             {totalCount}
-          </span>
+          </Badge>
         </button>
+      </nav>
 
+      <div className="my-3 h-px bg-sidebar-border" />
+
+      <nav className="flex-1 space-y-0.5 overflow-y-auto">
         {projects.map((project) => (
           <div
             key={project.id}
             className={
-              'group flex items-center rounded-lg text-sm transition ' +
-              (activeProjectId === project.id ? 'bg-slate-100' : 'hover:bg-slate-50')
+              'group flex items-center rounded-md text-sm transition-colors ' +
+              (activeProjectId === project.id ? 'bg-sidebar-accent' : 'hover:bg-sidebar-accent/50')
             }
           >
             <button
@@ -74,39 +84,47 @@ export function ProjectSidebar({
               className="flex flex-1 items-center gap-2 truncate px-3 py-2 text-left"
             >
               <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: project.color }}
+                className="size-2.5 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-sidebar"
+                style={{ backgroundColor: project.color, boxShadow: `0 0 0 1px ${project.color}33` }}
               />
-              <span className="truncate text-slate-700">{project.name}</span>
+              <span className="truncate font-medium text-sidebar-foreground">{project.name}</span>
               {project.clientName && (
-                <span className="truncate text-xs text-slate-400">· {project.clientName}</span>
+                <span className="truncate text-xs text-sidebar-foreground/50">
+                  · {project.clientName}
+                </span>
               )}
-              <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+              <Badge variant="secondary" className="ml-auto shrink-0">
                 {countForProject(project.id)}
-              </span>
+              </Badge>
             </button>
 
             <div className="hidden shrink-0 items-center gap-0.5 pr-2 group-hover:flex">
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 onClick={() => onEditProject(project)}
-                className="rounded px-1.5 py-1 text-xs text-slate-400 hover:bg-slate-200 hover:text-slate-600"
                 aria-label={`Edit project ${project.name}`}
               >
-                ✎
-              </button>
-              <button
+                <Pencil className="size-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6 text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => onDeleteProject(project)}
-                className="rounded px-1.5 py-1 text-xs text-slate-400 hover:bg-red-100 hover:text-red-600"
                 aria-label={`Hapus project ${project.name}`}
               >
-                ✕
-              </button>
+                <X className="size-3.5" />
+              </Button>
             </div>
           </div>
         ))}
 
         {projects.length === 0 && (
-          <p className="px-3 py-2 text-xs text-slate-400">Belum ada project.</p>
+          <p className="px-3 py-6 text-center text-xs text-sidebar-foreground/50">
+            Belum ada project.
+          </p>
         )}
       </nav>
     </aside>

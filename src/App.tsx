@@ -1,12 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { setupMockAdapter } from './api/mock/mockAdapter';
-import { ToastProvider } from './components/ui/ToastProvider';
-import { PrivateRoute } from './routes/PrivateRoute';
-import { DashboardPage } from './pages/DashboardPage';
-import { LoginPage } from './pages/LoginPage';
-
+import { setupMockAdapter } from '@/api/mock/mockAdapter';
+import { Toaster } from '@/components/ui/sonner';
+import { PrivateRoute } from '@/routes/PrivateRoute';
+import { LoginPage } from '@/pages/LoginPage';
+import { DashboardPage } from '@/pages/DashboardPage';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -30,22 +29,21 @@ function App() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <ToastProvider>
-                <BrowserRouter>
-                    <Routes>
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route
-                            path="/dashboard"
-                            element={
-                                <PrivateRoute>
-                                    <DashboardPage />
-                                </PrivateRoute>
-                            }
-                        />
-                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                    </Routes>
-                </BrowserRouter>
-            </ToastProvider>
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route
+                        path="/dashboard"
+                        element={
+                            <PrivateRoute>
+                                <DashboardPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+            </BrowserRouter>
+            <Toaster position="bottom-right" />
         </QueryClientProvider>
     );
 }

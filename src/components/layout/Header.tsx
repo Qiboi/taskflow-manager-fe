@@ -1,3 +1,6 @@
+import { Button } from '@/components/ui/button';
+import { Plus, LogOut } from 'lucide-react';
+
 interface HeaderProps {
   onLogout: () => void;
   onAddTask: () => void;
@@ -5,21 +8,25 @@ interface HeaderProps {
 
 export function Header({ onLogout, onAddTask }: HeaderProps) {
   return (
-    <header className="mb-6 flex items-center justify-between">
-      <h1 className="text-xl font-semibold text-slate-900">TaskFlow Manager</h1>
+    <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+      <div className="flex items-center gap-2.5">
+        <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <span className="text-sm font-semibold">T</span>
+        </div>
+        <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          TaskFlow Manager
+        </h1>
+      </div>
+
       <div className="flex items-center gap-2">
-        <button
-          onClick={onAddTask}
-          className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          + Tugas Baru
-        </button>
-        <button
-          onClick={onLogout}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-        >
+        <Button onClick={onAddTask} size="sm">
+          <Plus className="size-4" />
+          Tugas Baru
+        </Button>
+        <Button onClick={onLogout} variant="outline" size="sm">
+          <LogOut className="size-4" />
           Keluar
-        </button>
+        </Button>
       </div>
     </header>
   );
