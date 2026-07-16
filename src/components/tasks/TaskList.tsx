@@ -1,6 +1,6 @@
-import { useSelectionStore } from "../../store/selectionStore";
-import type { Task } from "../../types/task";
-import { TaskItem } from "./TaskItem";
+import type { Task } from '../../types/task';
+import { TaskItem } from './TaskItem';
+import { useSelectionStore } from '../../store/selectionStore';
 
 interface TaskListProps {
   tasks: Task[];

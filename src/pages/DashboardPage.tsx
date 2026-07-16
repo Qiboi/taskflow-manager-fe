@@ -1,15 +1,33 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLogout } from '../hooks/useAuth';
-import { useToast } from '../components/ui/ToastProvider';
 import { useFilterStore } from '../store/filterStore';
 import { useSelectionStore } from '../store/selectionStore';
-import { useBulkDeleteTasks, useBulkUpdateTasks, useCreateTask, useDeleteTask, useFilteredTasks, useTasksQuery, useUpdateTask } from '../hooks/useTasks';
-import type { Task } from '../types/task';
-import { TaskForm, type TaskFormValues } from '../components/tasks/TaskForm';
+import { useActiveProjectStore } from '../store/activeProjectStore';
+import { useLogout } from '../hooks/useAuth';
+import {
+    useBulkDeleteTasks,
+    useBulkUpdateTasks,
+    useCreateTask,
+    useDeleteTask,
+    useFilteredTasks,
+    useTasksQuery,
+    useUpdateTask,
+} from '../hooks/useTasks';
+import {
+    useCreateProject,
+    useDeleteProject,
+    useProjectsQuery,
+    useUpdateProject,
+} from '../hooks/useProjects';
+import { useToast } from '../components/ui/ToastProvider';
 import { Header } from '../components/layout/Header';
-import { BulkActionsBar } from '../components/tasks/BulkActionsBar';
 import { TaskList } from '../components/tasks/TaskList';
+import { TaskForm, type TaskFormValues } from '../components/tasks/TaskForm';
+import { BulkActionsBar } from '../components/tasks/BulkActionsBar';
+import { ProjectSidebar } from '../components/projects/ProjectSidebar';
+import { ProjectForm, type ProjectFormValues } from '../components/projects/ProjectForm';
+import type { Task } from '../types/task';
+import type { Project } from '../types/project';
 
 export function DashboardPage() {
     const navigate = useNavigate();
@@ -18,9 +36,16 @@ export function DashboardPage() {
 
     const { status, keyword, setStatus, setKeyword } = useFilterStore();
     const { selectedIds, clear: clearSelection } = useSelectionStore();
+    const { activeProjectId, setActiveProjectId } = useActiveProjectStore();
+
+    const handleSelectProject = (id: string | null) => {
+        setActiveProjectId(id);
+        clearSelection();
+    };
 
     const { data: tasks, isLoading, isError } = useTasksQuery();
-    const filtered = useFilteredTasks(tasks, status, keyword);
+    const { data: projects } = useProjectsQuery();
+    const filtered = useFilteredTasks(tasks, status, keyword, activeProjectId);
 
     const createTaskMutation = useCreateTask();
     const updateTaskMutation = useUpdateTask();
@@ -28,48 +53,61 @@ export function DashboardPage() {
     const bulkUpdateMutation = useBulkUpdateTasks();
     const bulkDeleteMutation = useBulkDeleteTasks();
 
-    const [formOpen, setFormOpen] = useState(false);
+    const createProjectMutation = useCreateProject();
+    const updateProjectMutation = useUpdateProject();
+    const deleteProjectMutation = useDeleteProject();
+
+    const [taskFormOpen, setTaskFormOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+    const [projectFormOpen, setProjectFormOpen] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const openCreateForm = () => {
+    // ---------- Task form handlers ----------
+    const openCreateTaskForm = () => {
         setEditingTask(null);
-        setFormOpen(true);
+        setTaskFormOpen(true);
     };
 
-    const openEditForm = (task: Task) => {
+    const openEditTaskForm = (task: Task) => {
         setEditingTask(task);
-        setFormOpen(true);
+        setTaskFormOpen(true);
     };
 
-    const closeForm = () => {
-        setFormOpen(false);
+    const closeTaskForm = () => {
+        setTaskFormOpen(false);
         setEditingTask(null);
     };
 
-    const handleFormSubmit = (values: TaskFormValues) => {
+    const handleTaskFormSubmit = (values: TaskFormValues) => {
         if (editingTask) {
             updateTaskMutation.mutate(
-                { id: editingTask.id, title: values.title, description: values.description },
+                {
+                    id: editingTask.id,
+                    title: values.title,
+                    description: values.description,
+                    projectId: values.projectId,
+                },
                 {
                     onSuccess: () => {
                         showToast('Tugas berhasil diperbarui', 'success');
-                        closeForm();
+                        closeTaskForm();
                     },
                     onError: () => showToast('Gagal memperbarui tugas.', 'error'),
                 }
             );
         } else {
             createTaskMutation.mutate(
-                { title: values.title, description: values.description },
+                { title: values.title, description: values.description, projectId: values.projectId },
                 {
                     onSuccess: () => {
                         showToast('Tugas berhasil ditambahkan', 'success');
-                        closeForm();
+                        closeTaskForm();
                     },
                     onError: () => showToast('Gagal menambahkan tugas.', 'error'),
                 }
@@ -84,7 +122,7 @@ export function DashboardPage() {
         );
     };
 
-    const handleDelete = (task: Task) => {
+    const handleDeleteTask = (task: Task) => {
         if (!window.confirm(`Hapus tugas "${task.title}"?`)) return;
         deleteTaskMutation.mutate(task.id, {
             onSuccess: () => showToast('Tugas dihapus', 'success'),
@@ -116,61 +154,143 @@ export function DashboardPage() {
         });
     };
 
+    // ---------- Project handlers ----------
+    const openCreateProjectForm = () => {
+        setEditingProject(null);
+        setProjectFormOpen(true);
+    };
+
+    const openEditProjectForm = (project: Project) => {
+        setEditingProject(project);
+        setProjectFormOpen(true);
+    };
+
+    const closeProjectForm = () => {
+        setProjectFormOpen(false);
+        setEditingProject(null);
+    };
+
+    const handleProjectFormSubmit = (values: ProjectFormValues) => {
+        if (editingProject) {
+            updateProjectMutation.mutate(
+                { id: editingProject.id, ...values },
+                {
+                    onSuccess: () => {
+                        showToast('Project berhasil diperbarui', 'success');
+                        closeProjectForm();
+                    },
+                    onError: () => showToast('Gagal memperbarui project.', 'error'),
+                }
+            );
+        } else {
+            createProjectMutation.mutate(values, {
+                onSuccess: () => {
+                    showToast('Project berhasil dibuat', 'success');
+                    closeProjectForm();
+                },
+                onError: () => showToast('Gagal membuat project.', 'error'),
+            });
+        }
+    };
+
+    const handleDeleteProject = (project: Project) => {
+        if (
+            !window.confirm(
+                `Hapus project "${project.name}"? Tugas di dalamnya tidak akan terhapus, hanya dilepas ke "Tanpa Project".`
+            )
+        )
+            return;
+
+        deleteProjectMutation.mutate(project.id, {
+            onSuccess: () => {
+                showToast('Project dihapus', 'success');
+                // Kalau project yang dihapus sedang aktif, kembali ke tampilan "All Projects".
+                if (activeProjectId === project.id) {
+                    setActiveProjectId(null);
+                }
+            },
+            onError: () => showToast('Gagal menghapus project.', 'error'),
+        });
+    };
+
     const isBulkProcessing = bulkUpdateMutation.isPending || bulkDeleteMutation.isPending;
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6">
-            <Header onLogout={handleLogout} onAddTask={openCreateForm} />
-
-            <div className="mb-4 flex flex-wrap gap-2">
-                <input
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    placeholder="Cari tugas..."
-                    className="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                />
-                {(['all', 'active', 'completed'] as const).map((s) => (
-                    <button
-                        key={s}
-                        onClick={() => setStatus(s)}
-                        className={
-                            'rounded-lg px-3 py-2 text-sm ' +
-                            (status === s
-                                ? 'bg-brand-600 text-white'
-                                : 'bg-white text-slate-600 ring-1 ring-slate-200')
-                        }
-                    >
-                        {s === 'all' ? 'Semua' : s === 'active' ? 'Belum Selesai' : 'Selesai'}
-                    </button>
-                ))}
-            </div>
-
-            <BulkActionsBar
-                selectedCount={selectedIds.size}
-                onComplete={handleBulkComplete}
-                onDelete={handleBulkDelete}
-                onClear={clearSelection}
-                isProcessing={isBulkProcessing}
+        <div className="flex min-h-screen bg-slate-50">
+            <ProjectSidebar
+                projects={projects ?? []}
+                tasks={tasks}
+                activeProjectId={activeProjectId}
+                onSelectProject={handleSelectProject}
+                onAddProject={openCreateProjectForm}
+                onEditProject={openEditProjectForm}
+                onDeleteProject={handleDeleteProject}
             />
 
-            {isLoading && <p className="text-sm text-slate-500">Memuat tugas...</p>}
-            {isError && <p className="text-sm text-red-600">Gagal memuat tugas.</p>}
+            <div className="flex-1 p-6">
+                <Header onLogout={handleLogout} onAddTask={openCreateTaskForm} />
 
-            {!isLoading && !isError && (
-                <TaskList
-                    tasks={filtered}
-                    onToggleComplete={handleToggleComplete}
-                    onEdit={openEditForm}
-                    onDelete={handleDelete}
+                <div className="mb-4 flex flex-wrap gap-2">
+                    <input
+                        value={keyword}
+                        onChange={(e) => setKeyword(e.target.value)}
+                        placeholder="Cari tugas..."
+                        className="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                    />
+                    {(['all', 'active', 'completed'] as const).map((s) => (
+                        <button
+                            key={s}
+                            onClick={() => setStatus(s)}
+                            className={
+                                'rounded-lg px-3 py-2 text-sm ' +
+                                (status === s
+                                    ? 'bg-brand-600 text-white'
+                                    : 'bg-white text-slate-600 ring-1 ring-slate-200')
+                            }
+                        >
+                            {s === 'all' ? 'Semua' : s === 'active' ? 'Belum Selesai' : 'Selesai'}
+                        </button>
+                    ))}
+                </div>
+
+                <BulkActionsBar
+                    selectedCount={selectedIds.size}
+                    onComplete={handleBulkComplete}
+                    onDelete={handleBulkDelete}
+                    onClear={clearSelection}
+                    isProcessing={isBulkProcessing}
+                />
+
+                {isLoading && <p className="text-sm text-slate-500">Memuat tugas...</p>}
+                {isError && <p className="text-sm text-red-600">Gagal memuat tugas.</p>}
+
+                {!isLoading && !isError && (
+                    <TaskList
+                        tasks={filtered}
+                        onToggleComplete={handleToggleComplete}
+                        onEdit={openEditTaskForm}
+                        onDelete={handleDeleteTask}
+                    />
+                )}
+            </div>
+
+            {taskFormOpen && (
+                <TaskForm
+                    initialTask={editingTask}
+                    projects={projects ?? []}
+                    defaultProjectId={activeProjectId}
+                    isSubmitting={createTaskMutation.isPending || updateTaskMutation.isPending}
+                    onSubmit={handleTaskFormSubmit}
+                    onCancel={closeTaskForm}
                 />
             )}
 
-            {formOpen && (
-                <TaskForm
-                    initialTask={editingTask}
-                    isSubmitting={createTaskMutation.isPending || updateTaskMutation.isPending}
-                    onSubmit={handleFormSubmit}
-                    onCancel={closeForm}
+            {projectFormOpen && (
+                <ProjectForm
+                    initialProject={editingProject}
+                    isSubmitting={createProjectMutation.isPending || updateProjectMutation.isPending}
+                    onSubmit={handleProjectFormSubmit}
+                    onCancel={closeProjectForm}
                 />
             )}
         </div>

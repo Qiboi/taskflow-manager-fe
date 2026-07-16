@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AuthSession } from '../types/auth';
 
-
 interface AuthState {
   session: AuthSession | null;
   isAuthenticated: boolean;

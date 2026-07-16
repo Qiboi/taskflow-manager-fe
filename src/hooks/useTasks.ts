@@ -32,6 +32,7 @@ export function useCreateTask() {
                 title: payload.title,
                 description: payload.description,
                 completed: false,
+                projectId: payload.projectId ?? null,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
@@ -161,12 +162,23 @@ export function useBulkDeleteTasks() {
     });
 }
 
-export function useFilteredTasks(tasks: Task[] | undefined, status: string, keyword: string) {
+/**
+ * Hook turunan: menerapkan filter status + kata kunci pencarian + project aktif
+ * pada hasil query tasks. Dipakai oleh komponen daftar tugas.
+ * `projectId === null` berarti "All Projects" (tidak difilter berdasarkan project).
+ */
+export function useFilteredTasks(
+    tasks: Task[] | undefined,
+    status: string,
+    keyword: string,
+    projectId?: string | null
+) {
     if (!tasks) return [];
     return tasks.filter((t) => {
         const matchesStatus =
             status === 'all' ? true : status === 'completed' ? t.completed : !t.completed;
         const matchesKeyword = t.title.toLowerCase().includes(keyword.toLowerCase());
-        return matchesStatus && matchesKeyword;
+        const matchesProject = projectId === null || projectId === undefined || t.projectId === projectId;
+        return matchesStatus && matchesKeyword && matchesProject;
     });
 }

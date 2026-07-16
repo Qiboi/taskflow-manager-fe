@@ -1,6 +1,6 @@
 import MockAdapter from 'axios-mock-adapter';
 import { apiClient } from '../axiosClient';
-import { taskDb } from '../../lib/localDb';
+import { projectDb, taskDb } from '../../lib/localDb';
 
 /**
  * HARDCODED credentials untuk mock login. Sesuai requirement:
@@ -50,6 +50,72 @@ export function setupMockAdapter() {
         return [401, { message: 'Username atau password salah.' }];
     });
 
+    // ---------- PROJECTS: LIST ----------
+    mock.onGet('/projects').reply((config) => {
+        if (!hasValidAuthHeader(config)) {
+            return [401, { message: 'Unauthorized' }];
+        }
+        try {
+            return [200, projectDb.getAll()];
+        } catch {
+            return [500, { message: 'Gagal mengambil data project.' }];
+        }
+    });
+
+    // ---------- PROJECTS: CREATE ----------
+    mock.onPost('/projects').reply((config) => {
+        if (!hasValidAuthHeader(config)) {
+            return [401, { message: 'Unauthorized' }];
+        }
+        try {
+            const body = JSON.parse(config.data);
+            if (!body.name || !body.name.trim()) {
+                return [400, { message: 'Nama project wajib diisi.' }];
+            }
+            const created = projectDb.create({
+                name: body.name,
+                color: body.color,
+                clientName: body.clientName,
+            });
+            return [201, created];
+        } catch {
+            return [500, { message: 'Gagal menyimpan project baru.' }];
+        }
+    });
+
+    // ---------- PROJECTS: UPDATE ----------
+    // PENTING: route spesifik/statis (kalau ada) harus didaftarkan SEBELUM pattern
+    // regex yang lebih umum, karena axios-mock-adapter mencocokkan handler
+    // sesuai urutan registrasi (match pertama yang dipakai). Konsisten dengan
+    // perbaikan urutan /tasks/bulk di bawah.
+    mock.onPatch(/\/projects\/.+/).reply((config) => {
+        if (!hasValidAuthHeader(config)) {
+            return [401, { message: 'Unauthorized' }];
+        }
+        try {
+            const id = extractIdFromUrl(config.url);
+            const body = JSON.parse(config.data);
+            const updated = projectDb.update(id, body);
+            return [200, updated];
+        } catch {
+            return [404, { message: 'Project tidak ditemukan.' }];
+        }
+    });
+
+    // ---------- PROJECTS: DELETE ----------
+    mock.onDelete(/\/projects\/.+/).reply((config) => {
+        if (!hasValidAuthHeader(config)) {
+            return [401, { message: 'Unauthorized' }];
+        }
+        try {
+            const id = extractIdFromUrl(config.url);
+            projectDb.remove(id);
+            return [200, { success: true }];
+        } catch {
+            return [500, { message: 'Gagal menghapus project.' }];
+        }
+    });
+
     // ---------- TASKS: LIST ----------
     mock.onGet('/tasks').reply((config) => {
         if (!hasValidAuthHeader(config)) {
@@ -76,43 +142,20 @@ export function setupMockAdapter() {
             if (!body.title || !body.title.trim()) {
                 return [400, { message: 'Judul tugas wajib diisi.' }];
             }
-            const created = taskDb.create({ title: body.title, description: body.description });
+            const created = taskDb.create({
+                title: body.title,
+                description: body.description,
+                projectId: body.projectId ?? null,
+            });
             return [201, created];
         } catch {
             return [500, { message: 'Gagal menyimpan tugas baru.' }];
         }
     });
 
-    // ---------- TASKS: UPDATE ----------
-    mock.onPatch(/\/tasks\/.+/).reply((config) => {
-        if (!hasValidAuthHeader(config)) {
-            return [401, { message: 'Unauthorized' }];
-        }
-        try {
-            const id = extractIdFromUrl(config.url);
-            const body = JSON.parse(config.data);
-            const updated = taskDb.update(id, body);
-            return [200, updated];
-        } catch {
-            return [404, { message: 'Tugas tidak ditemukan.' }];
-        }
-    });
-
-    // ---------- TASKS: DELETE ----------
-    mock.onDelete(/\/tasks\/.+/).reply((config) => {
-        if (!hasValidAuthHeader(config)) {
-            return [401, { message: 'Unauthorized' }];
-        }
-        try {
-            const id = extractIdFromUrl(config.url);
-            taskDb.remove(id);
-            return [200, { success: true }];
-        } catch {
-            return [500, { message: 'Gagal menghapus tugas.' }];
-        }
-    });
-
     // ---------- TASKS: BULK UPDATE ----------
+    // Didaftarkan SEBELUM regex /\/tasks\/.+/ di bawah, supaya request ke
+    // "/tasks/bulk" tidak salah tertangkap sebagai "update task dengan id=bulk".
     mock.onPatch('/tasks/bulk').reply((config) => {
         if (!hasValidAuthHeader(config)) {
             return [401, { message: 'Unauthorized' }];
@@ -137,6 +180,35 @@ export function setupMockAdapter() {
             return [200, { success: true }];
         } catch {
             return [500, { message: 'Gagal menghapus tugas secara massal.' }];
+        }
+    });
+
+    // ---------- TASKS: UPDATE (single, by id) ----------
+    mock.onPatch(/\/tasks\/.+/).reply((config) => {
+        if (!hasValidAuthHeader(config)) {
+            return [401, { message: 'Unauthorized' }];
+        }
+        try {
+            const id = extractIdFromUrl(config.url);
+            const body = JSON.parse(config.data);
+            const updated = taskDb.update(id, body);
+            return [200, updated];
+        } catch {
+            return [404, { message: 'Tugas tidak ditemukan.' }];
+        }
+    });
+
+    // ---------- TASKS: DELETE (single, by id) ----------
+    mock.onDelete(/\/tasks\/.+/).reply((config) => {
+        if (!hasValidAuthHeader(config)) {
+            return [401, { message: 'Unauthorized' }];
+        }
+        try {
+            const id = extractIdFromUrl(config.url);
+            taskDb.remove(id);
+            return [200, { success: true }];
+        } catch {
+            return [500, { message: 'Gagal menghapus tugas.' }];
         }
     });
 
