@@ -4,12 +4,12 @@ import { useSelectionStore } from '../../store/selectionStore';
 
 interface TaskListProps {
   tasks: Task[];
-  onToggleComplete: (task: Task) => void;
+  onCycleStatus: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
 }
 
-export function TaskList({ tasks, onToggleComplete, onEdit, onDelete }: TaskListProps) {
+export function TaskList({ tasks, onCycleStatus, onEdit, onDelete }: TaskListProps) {
   const { selectedIds, toggle, selectMany, clear } = useSelectionStore();
 
   const visibleIds = tasks.map((t) => t.id);
@@ -55,7 +55,7 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete }: TaskList
             task={task}
             isSelected={selectedIds.has(task.id)}
             onToggleSelect={toggle}
-            onToggleComplete={onToggleComplete}
+            onCycleStatus={onCycleStatus}
             onEdit={onEdit}
             onDelete={onDelete}
           />

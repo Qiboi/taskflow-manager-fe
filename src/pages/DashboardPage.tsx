@@ -28,6 +28,7 @@ import { ProjectSidebar } from '../components/projects/ProjectSidebar';
 import { ProjectForm, type ProjectFormValues } from '../components/projects/ProjectForm';
 import type { Task } from '../types/task';
 import type { Project } from '../types/project';
+import { nextStatus } from '../lib/taskMeta';
 
 export function DashboardPage() {
     const navigate = useNavigate();
@@ -92,6 +93,10 @@ export function DashboardPage() {
                     title: values.title,
                     description: values.description,
                     projectId: values.projectId,
+                    status: values.status,
+                    dueDate: values.dueDate,
+                    priority: values.priority,
+                    difficulty: values.difficulty,
                 },
                 {
                     onSuccess: () => {
@@ -103,7 +108,15 @@ export function DashboardPage() {
             );
         } else {
             createTaskMutation.mutate(
-                { title: values.title, description: values.description, projectId: values.projectId },
+                {
+                    title: values.title,
+                    description: values.description,
+                    projectId: values.projectId,
+                    status: values.status,
+                    dueDate: values.dueDate,
+                    priority: values.priority,
+                    difficulty: values.difficulty,
+                },
                 {
                     onSuccess: () => {
                         showToast('Tugas berhasil ditambahkan', 'success');
@@ -115,9 +128,9 @@ export function DashboardPage() {
         }
     };
 
-    const handleToggleComplete = (task: Task) => {
+    const handleCycleStatus = (task: Task) => {
         updateTaskMutation.mutate(
-            { id: task.id, completed: !task.completed },
+            { id: task.id, status: nextStatus(task.status) },
             { onError: () => showToast('Gagal memperbarui status tugas.', 'error') }
         );
     };
@@ -132,7 +145,7 @@ export function DashboardPage() {
 
     const handleBulkComplete = () => {
         bulkUpdateMutation.mutate(
-            { ids: Array.from(selectedIds), changes: { completed: true } },
+            { ids: Array.from(selectedIds), changes: { status: 'completed' } },
             {
                 onSuccess: () => {
                     showToast(`${selectedIds.size} tugas ditandai selesai`, 'success');
@@ -204,7 +217,6 @@ export function DashboardPage() {
         deleteProjectMutation.mutate(project.id, {
             onSuccess: () => {
                 showToast('Project dihapus', 'success');
-                // Kalau project yang dihapus sedang aktif, kembali ke tampilan "All Projects".
                 if (activeProjectId === project.id) {
                     setActiveProjectId(null);
                 }
@@ -267,7 +279,7 @@ export function DashboardPage() {
                 {!isLoading && !isError && (
                     <TaskList
                         tasks={filtered}
-                        onToggleComplete={handleToggleComplete}
+                        onCycleStatus={handleCycleStatus}
                         onEdit={openEditTaskForm}
                         onDelete={handleDeleteTask}
                     />

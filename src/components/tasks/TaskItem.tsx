@@ -1,10 +1,18 @@
 import type { Task } from '../../types/task';
+import { TASK_STATUS_LABEL, TASK_PRIORITY_LABEL, TASK_DIFFICULTY_LABEL } from '../../types/task';
+import {
+  statusColorClass,
+  priorityColorClass,
+  difficultyColorClass,
+  isOverdue,
+  formatDueDate,
+} from '../../lib/taskMeta';
 
 interface TaskItemProps {
   task: Task;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
-  onToggleComplete: (task: Task) => void;
+  onCycleStatus: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
 }
@@ -13,10 +21,12 @@ export function TaskItem({
   task,
   isSelected,
   onToggleSelect,
-  onToggleComplete,
+  onCycleStatus,
   onEdit,
   onDelete,
 }: TaskItemProps) {
+  const overdue = isOverdue(task);
+
   return (
     <li
       className={
@@ -32,34 +42,46 @@ export function TaskItem({
         aria-label={`Pilih tugas ${task.title}`}
       />
 
-      <button
-        onClick={() => onToggleComplete(task)}
-        className={
-          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ' +
-          (task.completed
-            ? 'border-emerald-500 bg-emerald-500 text-white'
-            : 'border-slate-300 hover:border-brand-500')
-        }
-        aria-label={task.completed ? 'Tandai belum selesai' : 'Tandai selesai'}
-      >
-        {task.completed && (
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
-            <path
-              fillRule="evenodd"
-              d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0l-3.5-3.5a1 1 0 111.4-1.4l2.8 2.8 6.8-6.8a1 1 0 011.4 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-        )}
-      </button>
-
       <div className="min-w-0 flex-1">
-        <p className={task.completed ? 'truncate text-slate-400 line-through' : 'truncate text-slate-900'}>
+        <p className={task.status === 'completed' ? 'truncate text-slate-400 line-through' : 'truncate text-slate-900'}>
           {task.title}
         </p>
         {task.description && (
           <p className="mt-0.5 truncate text-xs text-slate-400">{task.description}</p>
         )}
+
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => onCycleStatus(task)}
+            className={
+              'rounded-full px-2 py-0.5 text-xs font-medium transition hover:opacity-80 ' +
+              statusColorClass(task.status)
+            }
+            title="Klik untuk ganti status"
+          >
+            {TASK_STATUS_LABEL[task.status]}
+          </button>
+
+          <span className={'rounded-full px-2 py-0.5 text-xs font-medium ' + priorityColorClass(task.priority)}>
+            {TASK_PRIORITY_LABEL[task.priority]}
+          </span>
+
+          <span className={'rounded-full px-2 py-0.5 text-xs font-medium ' + difficultyColorClass(task.difficulty)}>
+            {TASK_DIFFICULTY_LABEL[task.difficulty]}
+          </span>
+
+          {task.dueDate && (
+            <span
+              className={
+                'rounded-full px-2 py-0.5 text-xs font-medium ' +
+                (overdue ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500')
+              }
+            >
+              {overdue ? '⚠ ' : ''}
+              {formatDueDate(task.dueDate)}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
