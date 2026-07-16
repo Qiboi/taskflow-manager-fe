@@ -219,7 +219,7 @@ function writeAllTasks(tasks: Task[]): void {
  *   anggap user ingin balik ke awal -> 'todo').
  */
 function syncStatusAndCompleted(
-    current: Task,
+    _current: Task,
     changes: Partial<Omit<Task, 'id' | 'createdAt'>>
 ): Partial<Omit<Task, 'id' | 'createdAt'>> {
     if (changes.status !== undefined) {
